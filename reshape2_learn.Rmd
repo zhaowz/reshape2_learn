@@ -1,0 +1,63 @@
+---
+title: "reshape2_learn"
+author: "zz"
+date: "2016年1月15日"
+output: html_document
+---
+
+---
+
+###比reshape更快，更省空间，[教程](http://seananderson.ca/2013/10/19/reshape.html)
+####1、wide data和long data
+```{r}
+library(reshape2)
+df.wide <- head(airquality)
+df.wide
+df.long <- melt(df.wide)
+df.long
+```
+- wide data就是常规的dataFrame型数据，每行是一个观测，每列是对应变量的值
+- long data一般三列，ID列（可有行号标志），变量列(多个变量)，value列，每行意味着一个ID在一个变量下的value
+
+**综上，wide data更用户友好，long data确是在一些绘图，模型中常用到的，如ggplot、plyr，lm**
+
+####2、melt函数，wide ---> long
+**函数原型melt(data, id.vars, measure.vars, variable.name = "variable", ..., na.rm = FALSE, value.name = "value") **
+
+```{r}
+melt(df.wide)
+```
+melt 默认所有列都是数值型变量的值，通常这就是我们想要的长数据。
+但是有时我们想看看不同月、不同天的ozone，solar.r，wind,tmp数据。
+那么就需要指定ID variables。ID variables是每行的唯一标识。
+
+```{r}
+# 对比df.long，month和day变量不再列出值而是作为每行的标志,同时修改long data的列名
+aql <- melt(df.wide, id.vars =c("Month","Day") ) 
+```
+
+####3、dcast、acast函数，long ---> wide
+- dcast：针对 data.frame
+- acast：针对 vector,matrix,array
+
+**dcast使用一个公式来描述数据的形状，公式左边指定ID variable（represent individual rows），而公式右边是measured variables。**
+
+```{r}
+aqw <- dcast(aql , Month + Day ~ variable)
+```
+刚才的原理如下：  
+![alt text](illustration.png)
+
+**可能会犯的一个错误是：每个数据单元格有多个value，比如：公式左边没有指定day作为ID:**
+
+```{r}
+aql
+dcast(aql, Month ~ variable)    # 每个数据单元填充的是5月份的数据行个数
+```
+所以，当dcast作用于long data，若每个单元格有多个数据时，需要告诉dcast如何对每个单元格的多个数据进行聚合操作。
+比如，mean,median,sum等操作
+```{r}
+dcast(aql, Month ~ variable, fun.aggregate =mean, na.rm =TRUE)  #month下有多个数据行，我们求平均
+```
+
+---
